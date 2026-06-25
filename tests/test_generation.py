@@ -4,7 +4,7 @@ from backend.generation.chain import answer_question
 store = get_vectorstore()
 retriever = store.as_retriever(search_kwargs={"k": 3})
 
-result = answer_question("What is this document about?", retriever)
+result = answer_question("What is the capital of France?", retriever)
 
 print("--- Answer ---")
 print(result["answer"])
