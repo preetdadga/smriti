@@ -52,6 +52,14 @@ Qwen3 8B runs in "thinking" mode by default; disabled via `/no_think`
 prefix in the system prompt to reduce generation latency for
 extractive QA, where reasoning overhead isn't needed.
 
+## Known Limitations
+- Conversational memory is in-process (Python dict), not persisted — 
+  history is lost on restart. Acceptable for single-session demo use; 
+  would need Redis/SQLite for multi-user production deployment.
+- Uses RunnableWithMessageHistory (LangChain Core), which is deprecated 
+  in favor of LangGraph persistence. Chosen deliberately to showcase 
+  LCEL composition; LangGraph would be the production-recommended path.
+  
 ## Future Enhancements
 - RAGAS evaluation harness
 - Streaming responses
