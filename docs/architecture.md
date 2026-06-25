@@ -43,6 +43,15 @@ smriti/
 - Memory: LangChain RunnableWithMessageHistory
 - Orchestration: LCEL chains throughout
 
+## Models
+- Embedding: nomic-embed-text (via Ollama)
+- Generation: qwen3:8b (via Ollama)
+
+Chosen for local inference on consumer hardware (RTX 3050 6GB VRAM).
+Qwen3 8B runs in "thinking" mode by default; disabled via `/no_think`
+prefix in the system prompt to reduce generation latency for
+extractive QA, where reasoning overhead isn't needed.
+
 ## Future Enhancements
 - RAGAS evaluation harness
 - Streaming responses
