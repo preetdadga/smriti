@@ -10,6 +10,11 @@ LOADER_MAP = {
 
 def load_document(file_path: str) -> list[Document]:
     ext = Path(file_path).suffix.lower()
+    if ext == ".txt":
+        docs = TextLoader(file_path, autodetect_encoding=True).load()
+        for doc in docs:
+            doc.page_content = doc.page_content.lstrip("\ufeff")
+        return docs
     loader_cls = LOADER_MAP.get(ext)
     if not loader_cls:
         raise ValueError(f"Unsupported file type: {ext}")
