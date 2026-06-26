@@ -10,7 +10,7 @@ from backend.ingestion.chunker import chunk_documents
 from backend.retrieval.vectorstore import get_vectorstore, add_documents
 from backend.retrieval.hybrid import get_hybrid_retriever
 from backend.retrieval.reranker import get_reranked_retriever
-from backend.retrieval.dashboard import get_ingested_documents
+from backend.retrieval.dashboard import get_ingested_documents, delete_document, clear_all_documents
 from backend.generation.chain import answer_question
 
 st.set_page_config(page_title="Smriti", page_icon="🧠")
@@ -66,41 +66,42 @@ st.divider()
 # --- Document dashboard ---
 st.subheader("📚 Document Dashboard")
 docs_in_store = get_ingested_documents(st.session_state.vectorstore)
+
 if docs_in_store:
     for d in docs_in_store:
-        st.write(f"**{d['source']}** — {d['chunks']} chunk(s)")
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.write(f"**{d['source']}** — {d['chunks']} chunk(s)")
+        with col2:
+            if st.button("🗑️ Delete", key=f"delete_{d['source']}"):
+                deleted = delete_document(st.session_state.vectorstore, d["source"])
+                st.session_state.retriever = build_retriever()
+                st.success(f"Deleted {deleted} chunk(s) from {d['source']}")
+                st.rerun()
+
+    st.divider()
+
+    if "confirm_clear" not in st.session_state:
+        st.session_state.confirm_clear = False
+
+    if not st.session_state.confirm_clear:
+        if st.button("🧹 Clear all documents"):
+            st.session_state.confirm_clear = True
+            st.rerun()
+    else:
+        st.warning("This will permanently delete ALL documents. Are you sure?")
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Yes, delete everything"):
+                clear_all_documents(st.session_state.vectorstore)
+                st.session_state.vectorstore = get_vectorstore()  # reconnect to fresh empty collection
+                st.session_state.retriever = build_retriever()
+                st.session_state.confirm_clear = False
+                st.success("All documents cleared.")
+                st.rerun()
+        with c2:
+            if st.button("Cancel"):
+                st.session_state.confirm_clear = False
+                st.rerun()
 else:
     st.caption("No documents ingested yet.")
-
-st.divider()
-
-# --- Chat interface ---
-st.subheader("Ask a question")
-
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
-        if msg.get("sources"):
-            render_sources(msg["sources"])
-
-if question := st.chat_input("Ask Smriti something..."):
-    st.session_state.messages.append({"role": "user", "content": question})
-    with st.chat_message("user"):
-        st.write(question)
-
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            result = answer_question(
-                question,
-                st.session_state.retriever,
-                st.session_state.session_id,
-            )
-
-        st.write(result["answer"])
-        render_sources(result["sources"])
-
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": result["answer"],
-        "sources": result["sources"],
-    })
