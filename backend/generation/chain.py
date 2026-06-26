@@ -50,7 +50,11 @@ def answer_question(question: str, retriever, session_id: str = "default") -> di
     )
 
     sources = [
-        {"source": d.metadata.get("source"), "page": d.metadata.get("page")}
+        {
+            "source": d.metadata.get("source"),
+            "page": d.metadata.get("page"),
+            "confidence": d.metadata.get("relevance_score"),
+        }
         for d in docs
     ]
     return {"answer": answer, "sources": sources}

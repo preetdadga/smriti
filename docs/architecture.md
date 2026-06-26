@@ -59,6 +59,12 @@ extractive QA, where reasoning overhead isn't needed.
 - Uses RunnableWithMessageHistory (LangChain Core), which is deprecated 
   in favor of LangGraph persistence. Chosen deliberately to showcase 
   LCEL composition; LangGraph would be the production-recommended path.
+- PyPDFLoader extracts text in raw stream order, which can scramble 
+  reading order for multi-column academic PDFs (especially LaTeX-
+  generated two-column layouts with embedded figures). Single-column 
+  PDFs extract reliably. A production system would need a layout-aware 
+  extractor (e.g. PyMuPDF with column detection, or the `unstructured` 
+  library) to handle two-column papers correctly.
   
 ## Future Enhancements
 - RAGAS evaluation harness

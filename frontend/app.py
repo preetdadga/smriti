@@ -10,6 +10,7 @@ from backend.ingestion.chunker import chunk_documents
 from backend.retrieval.vectorstore import get_vectorstore, add_documents
 from backend.retrieval.hybrid import get_hybrid_retriever
 from backend.retrieval.reranker import get_reranked_retriever
+from backend.retrieval.dashboard import get_ingested_documents
 from backend.generation.chain import answer_question
 
 st.set_page_config(page_title="Smriti", page_icon="🧠")
@@ -20,8 +21,16 @@ def build_retriever():
     """Rebuild hybrid + reranked retriever. Cheap now that the cross-encoder
     model itself is cached at module level in reranker.py — this just rebuilds
     the BM25 index over current Chroma contents."""
-    hybrid = get_hybrid_retriever(st.session_state.vectorstore, k=5)
+    hybrid = get_hybrid_retriever(st.session_state.vectorstore, k=25)
     return get_reranked_retriever(hybrid, top_n=3)
+
+
+def render_sources(sources):
+    with st.expander("Sources"):
+        for s in sources:
+            conf = s.get("confidence")
+            conf_str = f" (confidence: {conf:.2f})" if conf is not None else ""
+            st.caption(f"{s['source']} — page {s.get('page', 'N/A')}{conf_str}")
 
 
 # --- Session state setup ---
@@ -54,6 +63,17 @@ if uploaded_file is not None:
 
 st.divider()
 
+# --- Document dashboard ---
+st.subheader("📚 Document Dashboard")
+docs_in_store = get_ingested_documents(st.session_state.vectorstore)
+if docs_in_store:
+    for d in docs_in_store:
+        st.write(f"**{d['source']}** — {d['chunks']} chunk(s)")
+else:
+    st.caption("No documents ingested yet.")
+
+st.divider()
+
 # --- Chat interface ---
 st.subheader("Ask a question")
 
@@ -61,9 +81,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
         if msg.get("sources"):
-            with st.expander("Sources"):
-                for s in msg["sources"]:
-                    st.caption(f"{s['source']} — page {s.get('page', 'N/A')}")
+            render_sources(msg["sources"])
 
 if question := st.chat_input("Ask Smriti something..."):
     st.session_state.messages.append({"role": "user", "content": question})
@@ -79,9 +97,7 @@ if question := st.chat_input("Ask Smriti something..."):
             )
 
         st.write(result["answer"])
-        with st.expander("Sources"):
-            for s in result["sources"]:
-                st.caption(f"{s['source']} — page {s.get('page', 'N/A')}")
+        render_sources(result["sources"])
 
     st.session_state.messages.append({
         "role": "assistant",
